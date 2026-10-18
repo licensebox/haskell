@@ -1,0 +1,12 @@
+name: Test
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  conformance:
+    uses: licensebox/protocol/.github/workflows/sdk.yml@8284a5d3fb177ccd5a20c56d30a5ffe6cd93d99c
+    with:
+      language: haskell

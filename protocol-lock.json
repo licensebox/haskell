@@ -1,0 +1,8 @@
+{
+  "repository": "licensebox/protocol",
+  "ref": "8284a5d3fb177ccd5a20c56d30a5ffe6cd93d99c",
+  "protocol": 2,
+  "revision": 7,
+  "reference_go": "v0.6.1",
+  "vectors_sha256": "5f48d780ef7bb1f511ea4f935facad71748ff2a8f3cfc07fb512b82d1cfb302c"
+}

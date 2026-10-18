@@ -1,0 +1,14 @@
+.toolchain/
+build/
+*.o
+*.so
+*.hi
+*.cmi
+*.cmo
+*.cmx
+*.tar.gz
+.Rcheck/
+.build/
+dist-newstyle/
+*.mex*
+*.d
