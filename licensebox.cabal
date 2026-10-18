@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: licensebox
-version: 0.1.0.0
+version: 0.2.0
 synopsis: Native Licensebox application licensing
 description: Application licensing using the Licensebox C core with typed callbacks.
 category: System
