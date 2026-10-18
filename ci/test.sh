@@ -20,5 +20,11 @@ cat > build/cabal.project <<'PROJECT'
 packages: ..
 active-repositories: :none
 PROJECT
-"$cabal" v2-build --offline --project-file="$PWD/build/cabal.project" --builddir="$PWD/build/cabal"  --with-compiler="$ghc" --with-hc-pkg=/usr/bin/ghc-pkg --extra-lib-dirs="$LICENSEBOX_LIB_DIR" all
-"$cabal" sdist --project-file="$PWD/build/cabal.project" --output-directory "$PWD/build"
+# Cabal 3.8 still initializes repositories from its default global config before
+# applying project policy. Supply a config with no repository declarations at all.
+cat > build/cabal.config <<CONFIG
+remote-repo-cache: $PWD/build/cabal-repositories
+store-dir: $PWD/build/cabal-store
+CONFIG
+"$cabal" --config-file="$PWD/build/cabal.config" v2-build --offline --project-file="$PWD/build/cabal.project" --builddir="$PWD/build/cabal"  --with-compiler="$ghc" --with-hc-pkg=/usr/bin/ghc-pkg --extra-lib-dirs="$LICENSEBOX_LIB_DIR" all
+"$cabal" --config-file="$PWD/build/cabal.config" sdist --project-file="$PWD/build/cabal.project" --output-directory "$PWD/build"
