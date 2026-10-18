@@ -2,3 +2,6 @@
 set -euo pipefail
 sudo apt-get update
 sudo apt-get install -y ghc cabal-install libghc-aeson-dev
+
+/usr/bin/ghc --version
+/usr/bin/ghc-pkg latest aeson
