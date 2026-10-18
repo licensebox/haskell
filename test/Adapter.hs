@@ -22,6 +22,9 @@ run r=do
    "lease"->lease c
    "require"->require c (maybe "core" id $ optional r "module")
    "repeat"->require c "core">>require c "core"
+   "heartbeat"->heartbeat c (maybe "core" id $ optional r "module")
+   "heartbeat-repeat"->heartbeat c "core">>heartbeat c "core"
+   "heartbeat-after-require"->require c "core">>heartbeat c "core"
    "status"->status c
    "sign_in"->signIn c 3
    "logout"->logout c

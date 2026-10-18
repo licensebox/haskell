@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface, OverloadedStrings, DeriveDataTypeable #-}
-module Licensebox (Client,Options(..),Callbacks(..),defaultCallbacks,LicenseboxError(..),create,close,withClient,lease,require,status,signIn,logout,modules,requests,requestAccess,accessLink,record,deriveBinding,nativeBinding,verifyLease) where
+module Licensebox (Client,Options(..),Callbacks(..),defaultCallbacks,LicenseboxError(..),create,close,withClient,lease,heartbeat,require,status,signIn,logout,modules,requests,requestAccess,accessLink,record,deriveBinding,nativeBinding,verifyLease) where
 import Prelude hiding (read,product)
 import Control.Concurrent.MVar
 import Control.Exception
@@ -67,6 +67,8 @@ call (Client fp gate ptr inCallback failure) op args=do
   h<-readIORef ptr;when (h==nullPtr) (throwIO $ LicenseboxError "closed")
   mask_ $ alloca $ \out->do poke out nullPtr;rc<-utf8 op $ \o->json args $ \a->c_call h o a out;failed<-atomicModifyIORef' failure (\x->(Nothing,x));case failed of Just e->peek out >>= c_free >> throwIO e;Nothing->owned rc h out
 lease c=call c "lease" (object [])
+heartbeat :: Client -> String -> IO Value
+heartbeat c moduleName=call c "heartbeat" (object ["module".=moduleName])
 require c m=call c "require" (object ["module".=(m::String)])
 status c=call c "status" (object [])
 signIn c t=call c "sign_in" (object ["timeout".=(t::Double)])
