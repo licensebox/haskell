@@ -1,7 +1,7 @@
 # Licensebox for Haskell
 
 Application licensing SDK by [Vijai Kumar](https://meshing.engineer). MIT, 2026.
-Uses the maintained Licensebox C core **>=0.3.0** for HTTPS, pure Ed25519 verification, native machine identity, persistence, activation, offline access, policy refusals and bounded usage collection. No licensing server or administration credentials are included.
+Uses the maintained Licensebox C core **>=0.4.0** for HTTPS, pure Ed25519 verification, native machine identity, persistence, activation, offline access, policy refusals and bounded usage collection. No licensing server or administration credentials are included.
 
 ## Build and install
 
