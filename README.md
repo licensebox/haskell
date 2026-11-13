@@ -21,7 +21,7 @@ python3 ../protocol/conformance/run.py --adapter bash ci/adapter.sh
 ```
 import Licensebox
 import qualified Data.Map.Strict as M
-let options = Options "your-product" (M.singleton "signing-key-id" "PUBLIC_BASE64URL_KEY") "1.0" Nothing Nothing Nothing
+let options = Options "your-product" (M.singleton "signing-key-id" "PUBLIC_BASE64URL_KEY") "1.0" Nothing Nothing Nothing Nothing
 withClient options (defaultCallbacks { onSignIn = Just (\url code -> putStrLn (url ++ " " ++ code)) }) $ \client -> do
   _ <- require client "core" -- Check before opening user files.
   pure ()
@@ -50,3 +50,18 @@ Use `heartbeat client "core"` for an explicit bounded renewal/checkpoint. The ma
 Default Client/Lease/Require behavior is unchanged. No timer, task, thread or background heartbeat starts automatically. The application owns event-loop scheduling/checkpoints on the language runtime thread, and safe cancellation of protected work on refusal or the last verified expiry deadline. A failed check cannot extend that deadline. This is especially important for MATLAB, Wolfram/JLink and other runtimes whose callbacks must stay on their owning thread. The matching native C heartbeat API/contract is required.
 
 Validate the feature against the candidate native core with `python3 ../protocol/conformance/heartbeat.py --adapter bash ci/adapter.sh` in addition to the existing full shared suite.
+
+## Seats per module, floating copies and service accounts
+
+Calls: `enrol c token`, `checkout c module`, `checkin c modules`, and the `enrolToken` option field.
+
+A module can have seats of its own: on a machine without its seat the lease
+names it in `elsewhere`, requiring it fails with `module_denied`, and an
+explicit sign-in moves the seat here. A customer can hold a pool of floating
+copies of a module, named in the lease's `floating`: requiring such a module
+checks a copy out (`no_free_copy` when every copy is in use), heartbeats keep
+it, and checking in returns it. A crashed application's copy is freed when
+the heartbeat grace passes. A server or build runner licensed as a service
+account sets the one-time token an admin issued as `LICENSEBOX_ENROL_TOKEN`
+or the `enrol_token` option: its first lease enrols the machine without a
+browser (`invalid_token` when the token is used or expired).

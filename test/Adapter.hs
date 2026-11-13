@@ -18,7 +18,7 @@ run r=do
   "derive"->String . fromString <$> deriveBinding p (get r "source") (get r "raw_id")
   "native"->String . fromString <$> nativeBinding p
   "verify"->verifyLease (get r "token") p ks now
-  _->withClient (Options p ks "conformance" (Just $ get r "server") (Just $ get r "directory") (optional r "ca_bundle")) (defaultCallbacks {clock=Just (pure now),machineBinding=Just (pure $ maybe "" id $ optional r "binding"),onSignIn=Just (\_ _->pure ())}) $ \c->case op of
+  _->withClient (Options p ks "conformance" (Just $ get r "server") (Just $ get r "directory") (optional r "ca_bundle") (optional r "enrol_token")) (defaultCallbacks {clock=Just (pure now),machineBinding=Just (pure $ maybe "" id $ optional r "binding"),onSignIn=Just (\_ _->pure ())}) $ \c->case op of
    "lease"->lease c
    "require"->require c (maybe "core" id $ optional r "module")
    "repeat"->require c "core">>require c "core"
@@ -32,6 +32,9 @@ run r=do
    "requests"->requests c
    "request"->requestAccess c ["export"] "café – test"
    "access-link"->accessLink c
+   "enrol"->enrol c (get r "token")
+   "checkout"->checkout c (get r "module")
+   "checkin"->checkin c [get r "module"]>>pure Null
    "record"->record c "export" True 0.125>>record c "export" False 0.025>>pure Null
    _->error "unknown operation"
 main=do raw<-B.getContents;let Right (Object r)=eitherDecode raw

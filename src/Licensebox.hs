@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface, OverloadedStrings, DeriveDataTypeable #-}
-module Licensebox (Client,Options(..),Callbacks(..),defaultCallbacks,LicenseboxError(..),create,close,withClient,lease,heartbeat,require,status,signIn,logout,modules,requests,requestAccess,accessLink,record,deriveBinding,nativeBinding,verifyLease) where
+module Licensebox (Client,Options(..),Callbacks(..),defaultCallbacks,LicenseboxError(..),create,close,withClient,lease,heartbeat,require,status,signIn,logout,modules,requests,requestAccess,accessLink,record,enrol,checkout,checkin,deriveBinding,nativeBinding,verifyLease) where
 import Prelude hiding (read,product)
 import Control.Concurrent.MVar
 import Control.Exception
@@ -21,7 +21,7 @@ data LicenseboxError=LicenseboxError {errorCode::String} deriving (Show,Typeable
 instance Exception LicenseboxError
 data Callbacks=Callbacks {onSignIn::Maybe (String->String->IO ()),clock::Maybe (IO Double),machineBinding::Maybe (IO String),cancelled::Maybe (IO Bool)}
 defaultCallbacks=Callbacks Nothing Nothing Nothing Nothing
-data Options=Options {product::String,keys::M.Map String String,version::String,server::Maybe String,directory::Maybe String,caBundle::Maybe String}
+data Options=Options {product::String,keys::M.Map String String,version::String,server::Maybe String,directory::Maybe String,caBundle::Maybe String,enrolToken::Maybe String}
 data Client=Client (ForeignPtr ()) (MVar ()) (IORef (Ptr ())) (IORef Bool) (IORef (Maybe SomeException))
 foreign import ccall safe "lb_client_create_json" c_create::CString->Ptr ()->Ptr (Ptr ())->IO CInt
 foreign import ccall safe "lb_client_call_json" c_call::Ptr ()->CString->CString->Ptr CString->IO CInt
@@ -50,7 +50,7 @@ create o callbacks=mask $ \restore->do
  bind<-case machineBinding callbacks of Nothing->pure nullFunPtr;Just f->wrapBinding $ \_ out cap->guardCallback 1 $ do s<-f;utf8 s $ \p->do n<-B.length . E.encodeUtf8 . T.pack <$> pure s;if n>=fromIntegral cap then throwIO (LicenseboxError "invalid_argument") else copyBytes out p (n+1)>>pure 0
  cancel<-wrapCancel $ \_->guardCallback 1 $ do failed<-readIORef failure;case failed of Just _->pure 1;Nothing->maybe (pure 0) (fmap (\b->if b then 1 else 0)) (cancelled callbacks)
  let callbacksFree=mapM_ freeHaskellFunPtr $ filter (/=nullFunPtr) [castFunPtr sign,castFunPtr clk,castFunPtr bind,castFunPtr cancel]
- let values=["product".=product o,"keys".=keys o,"version".=version o] ++ maybe [] (\x->["server".=x]) (server o) ++ maybe [] (\x->["directory".=x]) (directory o) ++ maybe [] (\x->["ca_bundle".=x]) (caBundle o)
+ let values=["product".=product o,"keys".=keys o,"version".=version o] ++ maybe [] (\x->["server".=x]) (server o) ++ maybe [] (\x->["directory".=x]) (directory o) ++ maybe [] (\x->["ca_bundle".=x]) (caBundle o) ++ maybe [] (\x->["enrol_token".=x]) (enrolToken o)
  h<- (allocaBytes (5*sizeOf (nullPtr::Ptr ())) $ \cb->do
    let pointers=[nullPtr,castFunPtrToPtr sign,castFunPtrToPtr clk,castFunPtrToPtr bind,castFunPtrToPtr cancel]
    sequence_ [pokeByteOff cb (i*sizeOf (nullPtr::Ptr ())) p | (i,p)<-zip [0..] pointers]
@@ -77,6 +77,11 @@ modules c=call c "modules" (object [])
 requests c=call c "requests" (object [])
 requestAccess c ms note=call c "request" (object ["modules".=(ms::[String]),"note".=(note::String)])
 accessLink c=call c "access-link" (object [])
+-- | Service accounts and floating copies: require checks a floating module out
+-- by itself; enrolToken (else LICENSEBOX_ENROL_TOKEN) enrols on first lease.
+enrol c token=call c "enrol" (object ["token".=(token::String)])
+checkout c m=call c "checkout" (object ["module".=(m::String)])
+checkin c ms=call c "checkin" (object ["modules".=(ms::[String])])
 record c cmd ok elapsed=call c "record" (object ["command".=(cmd::String),"success".=(ok::Bool),"elapsed".=(elapsed::Double)])
 deriveBinding p s raw=allocaBytes 128 $ \out->do rc<-utf8 p $ \p'->utf8 s $ \s'->utf8 (reverse $ dropWhile (=='\0') $ reverse raw) $ \r->c_derive p' s' r out 128;if rc/=0 then raise rc nullPtr else peekUTF out
 nativeBinding p=allocaBytes 128 $ \out->do rc<-utf8 p $ \p'->c_native p' out 128;if rc/=0 then raise rc nullPtr else peekUTF out
